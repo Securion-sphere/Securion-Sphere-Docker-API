@@ -7,6 +7,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"github.com/labstack/gommon/log"
 )
 
 func main() {
@@ -19,11 +20,14 @@ func main() {
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
 		AllowMethods: []string{http.MethodGet, http.MethodPost, http.MethodDelete},
 	}))
+	e.Logger.SetLevel(log.INFO)
+
+	e.Logger.Info("Starting the application...")
 
 	// Load configuration
-	config, err := configs.LoadConfig(".")
+	config, err := configs.LoadConfig(e.Logger, ".")
 	if err != nil {
-		e.Logger.Fatal("cannot load config:", err)
+		e.Logger.Fatal("Failed to load config:", err)
 	}
 
 	api := e.Group("/" + config.DockerAPIGroup)
