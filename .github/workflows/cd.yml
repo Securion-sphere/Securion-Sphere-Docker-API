@@ -4,37 +4,68 @@ on:
   workflow_dispatch:
   push:
     branches: ["main"]
+    paths:
+      - "src/**"
+      - "go.mod"
+      - "go.sum"
+
+permissions:
+  contents: read
 
 jobs:
   build-and-deploy:
     name: Build and Deploy Go Echo Service
-    runs-on: self-hosted # Use your self-hosted runner
+    runs-on: self-hosted
 
     steps:
-      # Step 1: Checkout the repository code
+      # Checkout with minimal history
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
 
-      # Step 2: Set up Go environment
+      # Setup Go with version from go.mod
       - name: Set up Go
         uses: actions/setup-go@v5
+        with:
+          go-version-file: "go.mod"
+          cache: true
 
-      # Step 3: Install dependencies
+      # Dependency verification
       - name: Install dependencies
         run: |
-          go mod tidy
+          go mod verify
           go mod download
 
-      # Step 4: Build the Go Echo service binary
-      - name: Build the Go Echo service
+      # Security scanning
+      - name: Run security scanner
         run: |
-          go build -o ~/docker-api
+          go install github.com/securego/gosec/v2/cmd/gosec@latest
+          gosec ./...
 
-      # Step 5: Restart Supervisor-managed Go Echo service
-      - name: Restart Go Echo Service via Supervisor
-        env:
-          DOCKER_API_GROUP: ${{ secrets.DOCKER_API_GROUP }}
-          APP_PORT: ${{ secrets.APP_PORT }}
+      # Build with hardened flags
+      - name: Build Go Echo service
         run: |
-          sudo supervisorctl stop docker-api || true
-          sudo supervisorctl start docker-api
+          CGO_ENABLED=0 GOOS=linux go build \
+          -ldflags="-s -w -extldflags '-static'" \
+          -o ~/docker-api
+
+      # Controlled service restart
+      - name: Restart Supervisor Service
+        run: |
+          # Check service status
+          if sudo supervisorctl status docker-api | grep -q RUNNING; then
+            echo "Stopping existing service..."
+            sudo supervisorctl stop docker-api
+          fi
+
+          # Start service with error handling
+          if ! sudo supervisorctl start docker-api; then
+            echo "Failed to start service. Checking logs..."
+            sudo supervisorctl status docker-api
+            exit 1
+          fi
+
+          # Verify service status
+          sleep 5
+          sudo supervisorctl status docker-api || exit 1
