@@ -2,18 +2,15 @@ name: CD - Self-Hosted Runner
 
 on:
   workflow_dispatch:
-  push:
+  workflow_run:
+    workflows: ["CI"]
     branches: ["main"]
-    paths:
-      - "src/**"
-      - "go.mod"
-      - "go.sum"
-
-permissions:
-  contents: read
+    types:
+      - completed
 
 jobs:
   build-and-deploy:
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
     name: Build and Deploy Go Echo Service
     runs-on: self-hosted
 
