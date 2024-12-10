@@ -51,7 +51,7 @@ jobs:
           fi
 
           # Start service with error handling
-          if ! sudo supervisorctl start docker-api; then
+          if ! sudo /usr/bin/supervisorctl start docker-api; then
             echo "Failed to start service. Checking logs..."
             sudo /usr/bin/supervisorctl status docker-api
             exit 1
