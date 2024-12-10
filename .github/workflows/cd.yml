@@ -45,7 +45,7 @@ jobs:
       - name: Restart Supervisor Service
         run: |
           # Check service status
-          if sudo supervisorctl status docker-api | grep -q RUNNING; then
+          if sudo /usr/bin/supervisorctl status docker-api | grep -q RUNNING; then
             echo "Stopping existing service..."
             sudo /usr/bin/supervisorctl stop docker-api
           fi
