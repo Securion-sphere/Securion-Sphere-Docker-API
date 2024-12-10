@@ -24,7 +24,7 @@ func LoadConfig(echoLogger echo.Logger, path string) (config Config, err error) 
 	if err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
 			// .env file not found; fall back to environment variables
-			echoLogger.Info("No .env file found, loading environment variables from host instead.")
+			echoLogger.Info("No .env file found, loading environment variables from host instead")
 
 		} else {
 			// For any other error, log and return it
@@ -36,8 +36,22 @@ func LoadConfig(echoLogger echo.Logger, path string) (config Config, err error) 
 		echoLogger.Info("Successfully loaded .env file")
 	}
 
-	viper.BindEnv("APP_PORT")
-	viper.BindEnv("DOCKER_API_GROUP")
+	err = viper.BindEnv("APP_PORT")
+	if err != nil {
+		echoLogger.Error("Cannot bind `APP_PORT` environment variable")
+	}
+	if viper.GetString("APP_PORT") == "" {
+		echoLogger.Error("Missing `APP_PORT` environment variable")
+	}
+
+	err = viper.BindEnv("DOCKER_API_GROUP")
+	if err != nil {
+		echoLogger.Error("Cannot bind `DOCKER_API_GROUP` environment variable")
+	}
+	if viper.GetString("DOCKER_API_GROUP") == "" {
+		echoLogger.Info("No specific `DOCKER_API_GROUP` will set it to `default`")
+		config.DockerAPIGroup = "default"
+	}
 
 	// Unmarshal the loaded configuration into the Config struct
 	err = viper.Unmarshal(&config)
