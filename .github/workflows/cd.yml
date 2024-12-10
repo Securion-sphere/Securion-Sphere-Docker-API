@@ -1,0 +1,37 @@
+name: CD - Self-Hosted Runner
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["main"]
+
+jobs:
+  build-and-deploy:
+    name: Build and Deploy Go Echo Service
+    runs-on: self-hosted # Use your self-hosted runner
+
+    steps:
+      # Step 1: Checkout the repository code
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Step 2: Set up Go environment
+      - name: Set up Go
+        uses: actions/setup-go@v5
+
+      # Step 3: Install dependencies
+      - name: Install dependencies
+        run: |
+          go mod tidy
+          go mod download
+
+      # Step 4: Build the Go Echo service binary
+      - name: Build the Go Echo service
+        run: |
+          go build -o /usr/local/bin/docker-api
+
+      # Step 5: Restart Supervisor-managed Go Echo service
+      - name: Restart Go Echo Service via Supervisor
+        run: |
+          sudo supervisorctl stop docker-api || true
+          sudo supervisorctl start docker-api
