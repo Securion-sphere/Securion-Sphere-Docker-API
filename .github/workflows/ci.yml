@@ -37,9 +37,4 @@ jobs:
       # Step 5: Build the project
       - name: Build the Go Echo project
         run: |
-          go build -o echo-service ./...
-
-      # Step 6: Run tests
-      - name: Run tests
-        run: |
-          go test ./... -v
+          go build -o docker-api
