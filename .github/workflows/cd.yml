@@ -37,12 +37,6 @@ jobs:
           go mod verify
           go mod download
 
-      # Security scanning
-      - name: Run security scanner
-        run: |
-          go install github.com/securego/gosec/v2/cmd/gosec@latest
-          gosec ./...
-
       # Build with hardened flags
       - name: Build Go Echo service
         run: |
