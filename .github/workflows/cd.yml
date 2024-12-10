@@ -47,16 +47,16 @@ jobs:
           # Check service status
           if sudo supervisorctl status docker-api | grep -q RUNNING; then
             echo "Stopping existing service..."
-            sudo supervisorctl stop docker-api
+            sudo /usr/bin/supervisorctl stop docker-api
           fi
 
           # Start service with error handling
           if ! sudo supervisorctl start docker-api; then
             echo "Failed to start service. Checking logs..."
-            sudo supervisorctl status docker-api
+            sudo /usr/bin/supervisorctl status docker-api
             exit 1
           fi
 
           # Verify service status
           sleep 5
-          sudo supervisorctl status docker-api || exit 1
+          sudo /usr/bin/supervisorctl status docker-api || exit 1
