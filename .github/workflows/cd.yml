@@ -34,6 +34,7 @@ jobs:
       - name: Restart Go Echo Service via Supervisor
         env:
           DOCKER_API_GROUP: ${{ secrets.DOCKER_API_GROUP }}
+          APP_PORT: ${{ secrets.APP_PORT }}
         run: |
           sudo supervisorctl stop docker-api || true
           sudo supervisorctl start docker-api
