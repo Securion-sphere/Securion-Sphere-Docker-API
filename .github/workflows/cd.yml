@@ -28,7 +28,7 @@ jobs:
       # Step 4: Build the Go Echo service binary
       - name: Build the Go Echo service
         run: |
-          go build -o /usr/local/bin/docker-api
+          go build -o ~/docker-api
 
       # Step 5: Restart Supervisor-managed Go Echo service
       - name: Restart Go Echo Service via Supervisor
