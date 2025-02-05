@@ -2,6 +2,7 @@ package docker
 
 import (
 	"context"
+	"fmt"
 	"mime/multipart"
 
 	"github.com/Securion-Sphere/Securion-Sphere-Docker-API/internal/core/domain"
@@ -24,11 +25,10 @@ func (a *DockerImageAdapter) LoadImage(
 	ctx context.Context,
 	file multipart.File,
 ) (*image.LoadResponse, error) {
-	resp, err := a.dockerClient.Client.ImageLoad(ctx, file, true)
+	resp, err := a.dockerClient.Client.ImageLoad(ctx, file, false)
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
 	return &resp, nil
 }
 
@@ -43,7 +43,12 @@ func (a *DockerImageAdapter) ListImage(
 
 	var result []domain.Image
 	for _, i := range images {
-		result = append(result, domain.Image{ID: i.ID, RepoTags: i.RepoTags, Size: i.Size})
+		var id string
+
+		if _, err := fmt.Sscanf(i.ID, "sha256:%s", &id); err != nil {
+			return nil, err
+		}
+		result = append(result, domain.Image{ID: id, RepoTags: i.RepoTags, Size: i.Size})
 	}
 	return result, nil
 }

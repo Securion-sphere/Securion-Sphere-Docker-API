@@ -107,13 +107,13 @@ func (uc *ContainerUseCase) GetContainer(
 
 	containers, err := uc.containerService.ListContainers(ctx, listOption)
 	if err != nil {
-		return nil, err
+		return nil, errors.ErrFailedToList
 	}
 
 	if len(containers) == 0 {
-		return nil, err
+		return nil, errors.ErrContainerNotFound
 	} else if len(containers) > 1 {
-		return nil, err
+		return nil, errors.ErrMultipleContainers
 	}
 
 	return &containers[0], nil

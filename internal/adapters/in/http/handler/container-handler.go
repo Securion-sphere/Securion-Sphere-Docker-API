@@ -4,7 +4,7 @@ import (
 	"errors"
 	"net/http"
 
-	contanerErrors "github.com/Securion-Sphere/Securion-Sphere-Docker-API/internal/core/usecase/errors"
+	containerErrors "github.com/Securion-Sphere/Securion-Sphere-Docker-API/internal/core/usecase/errors"
 
 	"github.com/Securion-Sphere/Securion-Sphere-Docker-API/internal/adapters/in/http/handler/dto"
 	"github.com/Securion-Sphere/Securion-Sphere-Docker-API/internal/core/usecase"
@@ -56,8 +56,10 @@ func (h *ContainerHandler) ListContainers(c echo.Context) error {
 func (h *ContainerHandler) GetContainer(c echo.Context) error {
 	conatiner, err := h.containerUseCase.GetContainer(c.Request().Context(), c.Param("id"))
 	if err != nil {
-		if errors.Is(err, contanerErrors.ErrContainerNotFound) {
+		if errors.Is(err, containerErrors.ErrContainerNotFound) {
 			return echo.NewHTTPError(http.StatusNotFound, err)
+		} else if errors.Is(err, containerErrors.ErrMultipleContainers) {
+			return echo.NewHTTPError(http.StatusConflict, err)
 		}
 		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}

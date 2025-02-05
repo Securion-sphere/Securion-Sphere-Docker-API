@@ -11,6 +11,7 @@ import (
 	"github.com/Securion-Sphere/Securion-Sphere-Docker-API/internal/core/usecase/errors"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/image"
+	"github.com/labstack/gommon/log"
 )
 
 type ImageUseCase struct {
@@ -32,6 +33,9 @@ func (uc *ImageUseCase) GetAllImage(ctx context.Context) ([]domain.Image, error)
 func (uc *ImageUseCase) GetImage(ctx context.Context, id string) (*domain.Image, error) {
 	image, err := uc.imageService.InspectImage(ctx, id)
 	if err != nil {
+		if strings.Contains(err.Error(), "No such image") {
+			return nil, errors.ErrImageNotFound
+		}
 		return nil, err
 	}
 	return image, nil
@@ -45,6 +49,7 @@ func (uc *ImageUseCase) UploadImage(
 	if err != nil {
 		return nil, err
 	}
+	defer resp.Body.Close()
 
 	respBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -53,12 +58,12 @@ func (uc *ImageUseCase) UploadImage(
 
 	respString := string(respBytes)
 
-	if !strings.Contains(respString, "Loading Layer") {
-		return nil, errors.ErrImageAlreadyExist
-	}
+	log.Info(respString)
 
-	if !strings.Contains(respString, "Loaded Image") {
+	if !strings.Contains(respString, "Loaded image") {
 		return nil, errors.ErrImageLoadFailed
+	} else if ! strings.Contains(respString, "Loading layer") {
+		return nil, errors.ErrImageAlreadyExist
 	}
 
 	parts := strings.SplitN(respString, "Loaded image: ", 2)
