@@ -1,7 +1,10 @@
 package handler
 
 import (
+	"errors"
 	"net/http"
+
+	contanerErrors "github.com/Securion-Sphere/Securion-Sphere-Docker-API/internal/core/usecase/errors"
 
 	"github.com/Securion-Sphere/Securion-Sphere-Docker-API/internal/adapters/in/http/handler/dto"
 	"github.com/Securion-Sphere/Securion-Sphere-Docker-API/internal/core/usecase"
@@ -21,41 +24,50 @@ func NewContainerHandler(uc *usecase.ContainerUseCase) *ContainerHandler {
 func (h *ContainerHandler) CreateContainer(c echo.Context) error {
 	request := dto.CreateContainerDto{}
 	if err := c.Bind(&request); err != nil {
-		return err
+		return echo.NewHTTPError(http.StatusBadRequest, err)
 	}
+
 	if err := c.Validate(&request); err != nil {
-		return err
+		return echo.NewHTTPError(http.StatusBadRequest, err)
 	}
 
-	container, err := h.containerUseCase.CreateContainer(c.Request().Context(), request.Image, request.ContainerPort, request.HostPort, request.Flag)
+	container, err := h.containerUseCase.CreateContainer(
+		c.Request().Context(),
+		request.Image,
+		request.ContainerPort,
+		request.HostPort,
+		request.Flag,
+	)
 	if err != nil {
-		return err
+		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
 
-	return c.JSON(http.StatusOK, container)
+	return c.JSON(http.StatusAccepted, container)
 }
 
 func (h *ContainerHandler) ListContainers(c echo.Context) error {
 	containers, err := h.containerUseCase.GetAllContainer(c.Request().Context())
 	if err != nil {
-		return err
+		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
-
 	return c.JSON(http.StatusOK, containers)
 }
 
 func (h *ContainerHandler) GetContainer(c echo.Context) error {
 	conatiner, err := h.containerUseCase.GetContainer(c.Request().Context(), c.Param("id"))
 	if err != nil {
-		return err
+		if errors.Is(err, contanerErrors.ErrContainerNotFound) {
+			return echo.NewHTTPError(http.StatusNotFound, err)
+		}
+		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
 	return c.JSON(http.StatusOK, conatiner)
 }
 
-func (h* ContainerHandler) StopContainer(c echo.Context) error {
+func (h *ContainerHandler) StopContainer(c echo.Context) error {
 	err := h.containerUseCase.StopContainer(c.Request().Context(), c.Param("id"))
 	if err != nil {
-
+		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
-	return c.JSON(http.StatusOK, map[string]interface{}{"msg": `${c.Param("id")}`})
+	return c.JSON(http.StatusOK, map[string]string{"msg": "Stop Successfully"})
 }

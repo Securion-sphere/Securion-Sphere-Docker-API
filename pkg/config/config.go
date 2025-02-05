@@ -6,8 +6,9 @@ import (
 )
 
 type Config struct {
-	AppPort   int16  `mapstructure:"APP_PORT"`
-	JwtSecret string `mapstructure:"JWT_SECRET"`
+	AppPort    int16  `mapstructure:"APP_PORT"`
+	JwtSecret  string `mapstructure:"JWT_SECRET"`
+	BackendUrl string `mapstructure:"BACKEND_URL"`
 }
 
 var loadedConfig *Config
