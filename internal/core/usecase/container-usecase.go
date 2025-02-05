@@ -3,14 +3,13 @@ package usecase
 import (
 	"context"
 	"fmt"
-	"net/http"
 
 	"github.com/Securion-Sphere/Securion-Sphere-Docker-API/internal/core/domain"
 	"github.com/Securion-Sphere/Securion-Sphere-Docker-API/internal/core/ports"
+	"github.com/Securion-Sphere/Securion-Sphere-Docker-API/internal/core/usecase/errors"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/go-connections/nat"
-	"github.com/labstack/echo/v4"
 )
 
 type ContainerUseCase struct {
@@ -21,7 +20,13 @@ func NewContainerUseCase(containerService ports.ContainerService) *ContainerUseC
 	return &ContainerUseCase{containerService: containerService}
 }
 
-func (uc *ContainerUseCase) CreateContainer(ctx context.Context, image string, containerPort uint16, hostPort uint16, flag string) (*domain.Container, error) {
+func (uc *ContainerUseCase) CreateContainer(
+	ctx context.Context,
+	image string,
+	containerPort uint16,
+	hostPort uint16,
+	flag string,
+) (*domain.Container, error) {
 	portBindings := nat.PortMap{
 		nat.Port(fmt.Sprintf("%d", containerPort)): []nat.PortBinding{
 			{
@@ -42,12 +47,12 @@ func (uc *ContainerUseCase) CreateContainer(ctx context.Context, image string, c
 		AutoRemove:   true,
 	})
 	if err != nil {
-		return nil, echo.NewHTTPError(http.StatusServiceUnavailable, err)
+		return nil, errors.ErrFailedToList
 	}
 
 	err = uc.containerService.StartContainer(ctx, id, &container.StartOptions{})
 	if err != nil {
-		return nil, echo.NewHTTPError(http.StatusServiceUnavailable, err)
+		return nil, errors.ErrContainerStart
 	}
 
 	containers, err := uc.containerService.ListContainers(
@@ -59,18 +64,19 @@ func (uc *ContainerUseCase) CreateContainer(ctx context.Context, image string, c
 			),
 		},
 	)
+	if err != nil {
+		return nil, errors.ErrFailedToListAfterStart
+	}
+
 	if len(containers) > 1 {
 		for _, c := range containers {
-			if err := uc.containerService.RemoveContainer(ctx, c.ID, &container.RemoveOptions{}); err != nil {
-				return nil, echo.NewHTTPError(http.StatusConflict, "Start the container successfully but multiple container id started and cannot be removed")
+			if err := uc.containerService.StopContainer(ctx, c.ID, &container.StopOptions{}); err != nil {
+				return nil, errors.ErrContainerStopAfterStart
 			}
 		}
-		return nil, err
+		return nil, errors.ErrMultipleContainers
 	} else if len(containers) == 0 {
-		return nil, echo.NewHTTPError(http.StatusConflict, "Failed to start container")
-	} else if err != nil {
-		uc.containerService.RemoveContainer(ctx, containers[0].ID, &container.RemoveOptions{})
-		return nil, err
+		return nil, errors.ErrContainerExited
 	}
 
 	return &domain.Container{
@@ -86,25 +92,28 @@ func (uc *ContainerUseCase) CreateContainer(ctx context.Context, image string, c
 func (uc *ContainerUseCase) GetAllContainer(ctx context.Context) ([]domain.Container, error) {
 	containers, err := uc.containerService.ListContainers(ctx, &container.ListOptions{})
 	if err != nil {
-		return nil, echo.NewHTTPError(http.StatusServiceUnavailable, err)
+		return nil, err
 	}
 	return containers, nil
 }
 
-func (uc *ContainerUseCase) GetContainer(ctx context.Context, id string) (*domain.Container, error) {
+func (uc *ContainerUseCase) GetContainer(
+	ctx context.Context,
+	id string,
+) (*domain.Container, error) {
 	listOption := &container.ListOptions{
 		Filters: filters.NewArgs(filters.KeyValuePair{Key: "id", Value: id}),
 	}
 
 	containers, err := uc.containerService.ListContainers(ctx, listOption)
 	if err != nil {
-		return nil, echo.NewHTTPError(http.StatusServiceUnavailable, err)
+		return nil, err
 	}
 
 	if len(containers) == 0 {
-		return nil, echo.NewHTTPError(http.StatusNotFound, "Container not found")
+		return nil, err
 	} else if len(containers) > 1 {
-		return nil, echo.NewHTTPError(http.StatusConflict, "More than one container found, try to specific more ID length")
+		return nil, err
 	}
 
 	return &containers[0], nil
@@ -113,7 +122,7 @@ func (uc *ContainerUseCase) GetContainer(ctx context.Context, id string) (*domai
 func (uc *ContainerUseCase) StopContainer(ctx context.Context, id string) error {
 	err := uc.containerService.StopContainer(ctx, id, &container.StopOptions{})
 	if err != nil {
-		return echo.NewHTTPError(http.StatusServiceUnavailable, err)
+		return err
 	}
 	return nil
 }

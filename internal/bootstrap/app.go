@@ -13,9 +13,9 @@ import (
 )
 
 // Bootstrap initializes and returns the Echo server
-func Bootstrap() (*echo.Echo, *config.Config) {
+func Bootstrap() *echo.Echo {
 	e := echo.New()
-	e.Logger.SetLevel(log.DEBUG)
+	e.Logger.SetLevel(log.INFO)
 
 	// logger.SetLevel(log.INFO)
 	cfg, err := config.LoadConfig()
@@ -31,7 +31,6 @@ func Bootstrap() (*echo.Echo, *config.Config) {
 	dockerClient, err := infrastructure.NewDockerClient()
 	if err != nil {
 		log.Fatal("Failed to initialize Docker client:", err)
-		return nil, cfg
 	}
 
 	// Inject dependencies
@@ -39,16 +38,23 @@ func Bootstrap() (*echo.Echo, *config.Config) {
 	containerUseCase := usecase.NewContainerUseCase(containerAdapter)
 	containerHandler := handler.NewContainerHandler(containerUseCase)
 
+	// Inject dependencies
 	infoAdapter := docker.NewDockerInfoAdapter(dockerClient)
 	infoUseCase := usecase.NewInfoUsecase(infoAdapter)
 	healthHandler := handler.NewHealthHandler(infoUseCase)
 
+	// Inject dependencies
+	imageAdapter := docker.NewDockerImageAdapter(dockerClient)
+	imageUseCase := usecase.NewImageUseCase(imageAdapter)
+	imageHandler := handler.NewImageHandler(imageUseCase)
+
 	// Register Routes
-	routes.RegisterContainerRoutes(e, containerHandler)
+	routes.RegisterContainerRoute(e, containerHandler)
 	routes.RegisterHealthRoute(e, healthHandler)
+	routes.RegisterImageRoute(e, imageHandler)
 
 	// Log server info
 	log.Info("Server initialized on port:", cfg.AppPort)
 
-	return e, cfg
+	return e
 }

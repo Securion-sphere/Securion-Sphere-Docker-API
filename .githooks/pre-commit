@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -e  # Exit on error
+
+echo "Running go fmt formatter: "
+gofmt -s -w .
+echo "Running go goimports formatter:"
+goimports -l -w .
+echo "Running golines formatter:"
+golines --max-len=100 --tab-len=4 -l . && golines --max-len=100 --tab-len=4 -w .
+echo "Running golangci-lint linter:"
+golangci-lint run
