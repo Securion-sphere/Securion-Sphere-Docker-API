@@ -27,7 +27,10 @@ func (h *ImageHandler) UploadImage(c echo.Context) error {
 	// Open the uploaded file
 	src, err := file.Open()
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to open image file: "+err.Error())
+		return echo.NewHTTPError(
+			http.StatusInternalServerError,
+			"Failed to open image file: "+err.Error(),
+		)
 	}
 	defer src.Close()
 
@@ -37,7 +40,10 @@ func (h *ImageHandler) UploadImage(c echo.Context) error {
 		if errors.Is(err, imageErrors.ErrImageAlreadyExist) {
 			return echo.NewHTTPError(http.StatusConflict, "Conflicted: "+err.Error())
 		}
-		return echo.NewHTTPError(http.StatusInternalServerError, "Image upload failed: "+err.Error())
+		return echo.NewHTTPError(
+			http.StatusInternalServerError,
+			"Image upload failed: "+err.Error(),
+		)
 	}
 
 	// Return the uploaded image details in the response

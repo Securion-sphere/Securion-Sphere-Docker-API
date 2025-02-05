@@ -62,7 +62,7 @@ func (uc *ImageUseCase) UploadImage(
 
 	if !strings.Contains(respString, "Loaded image") {
 		return nil, errors.ErrImageLoadFailed
-	} else if ! strings.Contains(respString, "Loading layer") {
+	} else if !strings.Contains(respString, "Loading layer") {
 		return nil, errors.ErrImageAlreadyExist
 	}
 
