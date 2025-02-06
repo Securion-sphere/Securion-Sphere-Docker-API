@@ -8,14 +8,25 @@ import (
 	"github.com/Securion-Sphere/Securion-Sphere-Docker-API/internal/infrastructure"
 	"github.com/Securion-Sphere/Securion-Sphere-Docker-API/internal/middleware"
 	"github.com/Securion-Sphere/Securion-Sphere-Docker-API/pkg/config"
+	"github.com/go-playground/validator"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/gommon/log"
 )
+
+type CustomValidator struct {
+	Validator *validator.Validate
+}
+
+// Validate function to implement Echo's Validator interface
+func (cv *CustomValidator) Validate(i interface{}) error {
+	return cv.Validator.Struct(i)
+}
 
 // Bootstrap initializes and returns the Echo server
 func Bootstrap() *echo.Echo {
 	e := echo.New()
 	e.Logger.SetLevel(log.INFO)
+	e.Validator = &CustomValidator{Validator: validator.New()}
 
 	// logger.SetLevel(log.INFO)
 	cfg, err := config.LoadConfig()

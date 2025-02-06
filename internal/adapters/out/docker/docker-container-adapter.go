@@ -44,7 +44,7 @@ func (dc *DockerContainerAdapter) ListContainers(
 
 	var result []domain.Container
 	for _, c := range containers {
-		result = append(result, domain.Container{ID: c.ID, Name: c.Names[0], Status: c.State})
+		result = append(result, domain.Container{ID: c.ID, Name: c.Names[0], Image: c.ID, Ports: c.Ports, Status: c.State, Created: c.Created})
 	}
 	return result, nil
 }
