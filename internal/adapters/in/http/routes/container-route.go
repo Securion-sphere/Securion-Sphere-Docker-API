@@ -7,8 +7,7 @@ import (
 )
 
 func RegisterContainerRoute(e *echo.Echo, h *handler.ContainerHandler) {
-	g := e.Group("/container")
-	g.Use(middleware.EchoJWTMiddleware())
+	g := e.Group("/container", middleware.EchoJWTMiddleware())
 
 	g.POST("", h.CreateContainer)
 	g.GET("", h.ListContainers)

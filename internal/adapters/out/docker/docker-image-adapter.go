@@ -25,7 +25,7 @@ func (a *DockerImageAdapter) LoadImage(
 	ctx context.Context,
 	file multipart.File,
 ) (*image.LoadResponse, error) {
-	resp, err := a.dockerClient.Client.ImageLoad(ctx, file, false)
+	resp, err := a.dockerClient.Client.ImageLoad(ctx, file, true)
 	if err != nil {
 		return nil, err
 	}
