@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"mime/multipart"
 	"strings"
@@ -11,7 +12,6 @@ import (
 	"github.com/Securion-Sphere/Securion-Sphere-Docker-API/internal/core/usecase/errors"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/image"
-	"github.com/labstack/gommon/log"
 )
 
 type ImageUseCase struct {
@@ -49,7 +49,12 @@ func (uc *ImageUseCase) UploadImage(
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	// defer resp.Body.Close()
+	defer func() {
+		if closeErr := resp.Body.Close(); closeErr != nil {
+			err = fmt.Errorf("failed to close file: %w", closeErr) // Capture the error
+		}
+	}()
 
 	respBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -58,16 +63,11 @@ func (uc *ImageUseCase) UploadImage(
 
 	respString := string(respBytes)
 
-	log.Info(respString)
-
 	if !strings.Contains(respString, "Loaded image") {
 		return nil, errors.ErrImageLoadFailed
-	} else if !strings.Contains(respString, "Loading layer") {
-		return nil, errors.ErrImageAlreadyExist
 	}
 
 	parts := strings.SplitN(respString, "Loaded image: ", 2)
-
 	name := strings.SplitN(parts[1], ":", 2)[0]
 
 	images, err := uc.imageService.ListImage(ctx, &image.ListOptions{Filters: filters.NewArgs(

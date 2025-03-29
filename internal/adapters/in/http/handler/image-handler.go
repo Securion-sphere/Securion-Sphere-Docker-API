@@ -2,6 +2,7 @@ package handler
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/Securion-Sphere/Securion-Sphere-Docker-API/internal/core/usecase"
@@ -32,7 +33,12 @@ func (h *ImageHandler) UploadImage(c echo.Context) error {
 			"Failed to open image file: "+err.Error(),
 		)
 	}
-	defer src.Close()
+	defer func() {
+		if closeErr := src.Close(); closeErr != nil {
+			err = fmt.Errorf("failed to close file: %w", closeErr) // Capture the error
+		}
+	}()
+	// defer src.Close()
 
 	// Call the use case to upload the image
 	image, err := h.imageUseCase.UploadImage(c.Request().Context(), src)
